@@ -1,7 +1,7 @@
 import Container from "@/app/Components/Container";
 import NaturalPersonForm from "@/app/Components/NaturalPersonForm";
 
-const page = () => {
+const page = async () => {
   return (
     <Container className="py-20">
       <div className="md:card md:shadow-lg/100">
@@ -10,7 +10,7 @@ const page = () => {
             job list
           </p>
 
-          <h1 className="text-3xl text-center mt-3 mb-2">Persona natural</h1>
+          <h1 className="text-3xl text-center my-2">Persona natural</h1>
 
           <p className="text-center mb-3">Crea una cuenta</p>
 

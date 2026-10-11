@@ -1,22 +1,31 @@
 "use client";
 
 import { z } from "zod";
-import Button from "@/app/Components/Button";
+import { useEffect, useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import Input from "@/app/Components/Input";
+import Button from "@/app/Components/Button";
 import Select from "@/app/Components/Select";
-import { useForm } from "react-hook-form";
+import Catalog from "@/app/services/Catalog/Catalog.service";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CatalogData } from "@/app/services/Catalog/Catalog.service";
+import SignUp, {
+  SignUpResponse,
+} from "../services/NaturalPerson/SignUp.service";
+import { useRouter } from "next/navigation";
+import { AxiosError } from "axios";
+import { toast } from "react-toastify";
 
 const naturalPersonSchema = z
   .object({
-    documentType: z.string().min(1, "Selecciona un tipo de documento"),
-    documentNumber: z.string().min(1, "Ingresa el número de documento"),
+    documentTypeId: z.string().min(1, "Selecciona un tipo de documento"),
+    identificationNumber: z.string().min(1, "Ingresa el número de documento"),
     firstName: z.string().min(1, "Ingresa tu primer nombre"),
     secondName: z.string(),
     firstSurname: z.string().min(1, "Ingresa tu primer apellido"),
     secondSurname: z.string(),
     birthDate: z.string(),
-    gender: z.string(),
+    genderId: z.string(),
     phone: z.string(),
     address: z.string(),
     email: z
@@ -42,9 +51,59 @@ export default function NaturalPersonForm() {
     resolver: zodResolver(naturalPersonSchema),
   });
 
-  function onSubmit(data: NaturalPersonFormData) {
-    console.log(data);
-  }
+  const router = useRouter();
+  const [documentTypes, setDocumentTypes] = useState<CatalogData[]>([]);
+  const [genders, setGenders] = useState<CatalogData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchDocumentTypes = async () => {
+      try {
+        const dt = await Catalog("DOCUMENT_TYPE");
+        setDocumentTypes(dt.data);
+        const g = await Catalog("GENDER");
+        setGenders(g.data);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocumentTypes();
+  }, []);
+
+  const onSubmit: SubmitHandler<NaturalPersonFormData> = async (
+    data,
+  ): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response: SignUpResponse = await SignUp(data);
+
+      console.log("Registro exitoso:", response.message);
+      toast.success("Cuenta creada con éxito");
+
+      router.push("/login");
+    } catch (error: unknown) {
+      console.log(error);
+
+      const message =
+        error instanceof AxiosError
+          ? error.response?.data?.message
+          : "Ocurrió un error al crear la cuenta";
+
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading)
+    return <span className="loading loading-spinner loading-xl"></span>;
+  if (error) return <div className="text-error">Error: {error.message}</div>;
 
   return (
     <form
@@ -52,26 +111,28 @@ export default function NaturalPersonForm() {
       className="grid grid-cols-12 gap-x-4 gap-y-5"
     >
       <Select
-        {...register("documentType")}
+        {...register("documentTypeId")}
         label="Tipo de documento *"
         id="document-type"
         placeholder="Seleccione un Tipo de documento"
         wrapperClassName="col-span-12 md:col-span-6"
-        error={errors.documentType?.message}
+        error={errors.documentTypeId?.message}
       >
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
+        {documentTypes.map((documentType) => (
+          <option key={documentType.uuid} value={documentType.uuid}>
+            {documentType.name}
+          </option>
+        ))}
       </Select>
 
       <Input
-        {...register("documentNumber")}
+        {...register("identificationNumber")}
         label="Número de documento *"
         id="document-number"
         placeholder="Ej: 1234567890"
         type="text"
         wrapperClassName="col-span-12 md:col-span-6"
-        error={errors.documentNumber?.message}
+        error={errors.identificationNumber?.message}
       />
 
       <Input
@@ -91,6 +152,7 @@ export default function NaturalPersonForm() {
         placeholder="Ej: Luis"
         type="text"
         wrapperClassName="col-span-12 md:col-span-6"
+        error={errors.secondName?.message}
       />
 
       <Input
@@ -110,6 +172,7 @@ export default function NaturalPersonForm() {
         placeholder="Ej: López"
         type="text"
         wrapperClassName="col-span-12 md:col-span-6"
+        error={errors.secondSurname?.message}
       />
 
       <Input
@@ -123,15 +186,18 @@ export default function NaturalPersonForm() {
       />
 
       <Select
-        {...register("gender")}
+        {...register("genderId")}
         label="Género"
         id="gender"
         placeholder="Seleccione un genero"
         wrapperClassName="col-span-12 md:col-span-4"
+        error={errors.genderId?.message}
       >
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
+        {genders.map((gender) => (
+          <option key={gender.uuid} value={gender.uuid}>
+            {gender.name}
+          </option>
+        ))}
       </Select>
 
       <Input

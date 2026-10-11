@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from "react";
 
-interface ContainerProps extends HTMLAttributes<HTMLDivElement> {}
+type ContainerProps = HTMLAttributes<HTMLDivElement>;
 
 export default function Container({ children, className, ...props }: ContainerProps) {
   return (
